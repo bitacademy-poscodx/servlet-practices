@@ -41,13 +41,11 @@ public class GuestbookDao {
 			pstmt1.setString(1, vo.getName());
 			pstmt1.setString(2, vo.getPassword());
 			pstmt1.setString(3, vo.getContents());
-			int count = pstmt1.executeUpdate();
+			result = pstmt1.executeUpdate();
 
 			ResultSet rs = pstmt2.executeQuery();
 			vo.setNo(rs.next() ? rs.getLong(1) : null);
 			rs.close();
-			
-			result = count;			
 		} catch (SQLException e) {
 			System.out.println("Error:" + e);
 		}
