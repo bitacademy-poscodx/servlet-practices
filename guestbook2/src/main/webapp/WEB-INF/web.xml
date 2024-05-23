@@ -13,7 +13,7 @@
     <description></description>
     <display-name>GuestbookServlet</display-name>
     <servlet-name>GuestbookServlet</servlet-name>
-    <servlet-class>guestbook.conroller.GuestbookServlet</servlet-class>
+    <servlet-class>guestbook.controller.GuestbookServlet</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>GuestbookServlet</servlet-name>
