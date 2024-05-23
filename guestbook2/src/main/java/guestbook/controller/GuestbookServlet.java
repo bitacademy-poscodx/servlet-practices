@@ -33,12 +33,12 @@ public class GuestbookServlet extends HttpServlet {
 		} else if("add".equals(action)) {
 			String name = request.getParameter("name");
 			String password = request.getParameter("password");
-			String message = request.getParameter("message");
+			String contents = request.getParameter("contents");
 			
 			GuestbookVo vo = new GuestbookVo();
 			vo.setName(name);
 			vo.setPassword(password);
-			vo.setMessage(message);
+			vo.setContents(contents);
 			
 			new GuestbookDao().insert(vo);
 			response.sendRedirect(request.getContextPath() + "/gb");
