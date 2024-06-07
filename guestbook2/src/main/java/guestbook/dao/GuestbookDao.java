@@ -13,16 +13,56 @@ import guestbook.vo.GuestbookVo;
 public class GuestbookDao {
 	public int deleteByNoAndPassword(Long no, String password) {
 		int result = 0;
+
+		Connection conn = null;	
 		
-		try (
-			Connection conn = getConnection();	
-			PreparedStatement pstmt = conn.prepareStatement("delete from guestbook where no = ? and password = ?");
-		){
-			pstmt.setLong(1, no);
-			pstmt.setString(2, password);
-			result = pstmt.executeUpdate();
+		PreparedStatement pstmt1 = null;
+		PreparedStatement pstmt2 = null;
+
+		try {
+			conn = getConnection();
+							
+			pstmt1 = conn.prepareStatement("update guestbook_log set count = count - 1 where date = (select date(reg_date) from guestbook where no = ?)");
+			pstmt1.setLong(1, no);
+			
+			pstmt2 = conn.prepareStatement("delete from guestbook where no = ? and password = ?");
+			pstmt2.setLong(1, no);
+			pstmt2.setString(2, password);
+			
+			// TX:BEGIN ///////////////
+			conn.setAutoCommit(false);
+
+			//DML1
+			pstmt1.executeUpdate();
+
+			//DML2
+			result = pstmt2.executeUpdate();
+			
+			// TX:END(SUCCESS) /////////
+			conn.commit();			
 		} catch (SQLException e) {
 			System.out.println("Error:" + e);
+			
+			// TX:END(FAIL) /////////
+			try {
+				if(conn != null) {
+					conn.rollback();
+				}
+			} catch(SQLException ignored) {
+			}			
+		} finally {
+			try {
+				if(pstmt2 != null) {
+					pstmt2.close();
+				}
+				if(pstmt1 != null) {
+					pstmt1.close();
+				}
+				if(conn != null) {
+					conn.close();
+				}
+			} catch(SQLException ignored) {
+			}
 		}
 		
 		return result;		
@@ -65,7 +105,9 @@ public class GuestbookDao {
 			
 			// TX:END(FAIL) /////////
 			try {
-				conn.rollback();
+				if(conn != null) {
+					conn.rollback();
+				}
 			} catch(SQLException ignored) {
 			}
 			
