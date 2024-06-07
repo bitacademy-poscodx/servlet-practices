@@ -13,51 +13,73 @@ import guestbook.vo.GuestbookVo;
 public class GuestbookDao {
 	public int deleteByNoAndPassword(Long no, String password) {
 		int result = 0;
-
-		Connection conn = null;	
 		
+		Connection conn = null;
 		PreparedStatement pstmt1 = null;
 		PreparedStatement pstmt2 = null;
-
+		PreparedStatement pstmt3 = null;
+		ResultSet rs = null;
+		
 		try {
-			conn = getConnection();
-							
-			pstmt1 = conn.prepareStatement("update guestbook_log set count = count - 1 where date = (select date(reg_date) from guestbook where no = ?)");
+			conn = getConnection();	
+			
+			pstmt1 = conn.prepareStatement("select date_format(reg_date, '%Y-%m-%d') from guestbook where no = ?");
 			pstmt1.setLong(1, no);
 			
 			pstmt2 = conn.prepareStatement("delete from guestbook where no = ? and password = ?");
 			pstmt2.setLong(1, no);
 			pstmt2.setString(2, password);
-			
-			// TX:BEGIN ///////////////
+
+			pstmt3 = conn.prepareStatement("update guestbook_log set count = count-1 where date_format(date, '%Y-%m-%d') = ?");
+
+			// TX:BEGIN ///////////////////////////
 			conn.setAutoCommit(false);
-
-			//DML1
-			pstmt1.executeUpdate();
-
-			//DML2
-			result = pstmt2.executeUpdate();
 			
-			// TX:END(SUCCESS) /////////
+			// DML1
+			rs = pstmt1.executeQuery();
+			
+			String regDate = rs.next() ? rs.getString(1) : null;
+			if(regDate == null) {
+				return result;
+			}
+			
+			// DML2
+			result = pstmt2.executeUpdate();
+			if(result == 0) {
+				return result;
+			}
+			
+			// DML3
+			pstmt3.setString(1, regDate);
+			pstmt3.executeUpdate();
+			
+			// TX:END(SUCCESS) ////////////////////
 			conn.commit();			
 		} catch (SQLException e) {
 			System.out.println("Error:" + e);
-			
-			// TX:END(FAIL) /////////
+
+			// TX:END(FAIL) ///////////////////////
 			try {
 				if(conn != null) {
 					conn.rollback();
 				}
 			} catch(SQLException ignored) {
-			}			
+			}
 		} finally {
 			try {
+				if(rs != null) {
+					rs.close();
+				}
+				if(pstmt3 != null) {
+					pstmt3.close();
+				}
 				if(pstmt2 != null) {
 					pstmt2.close();
 				}
 				if(pstmt1 != null) {
 					pstmt1.close();
 				}
+				
 				if(conn != null) {
 					conn.close();
 				}
